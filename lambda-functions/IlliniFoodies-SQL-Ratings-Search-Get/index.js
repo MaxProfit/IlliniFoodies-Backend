@@ -6,23 +6,35 @@ const mysql = require('mysql2');
 const pool = mysql.createPool(require( "./config.json" ));
 
 exports.handler = async function(event, context) {
-  try {
-      // now get a Promise wrapped instance of that pool
-    const promisePool = pool.promise();
-    // query database using promises
-    let table = 'Ratings';
-    const [rows, fields] = await promisePool.query("SELECT * FROM ?? WHERE RestaurantName=?", [table, event.restaurant_name]);
+
+    let body;
+    let statusCode;
+    try {
+        // now get a Promise wrapped instance of that pool
+        const promisePool = pool.promise();
+        // query database using promises
+        let table = 'Ratings';
+        let restaurant_name = event["pathParameters"]["restaurant-name"];
+        
+        // Right here we need to translate all of the - and _ to spaces!
+        
+        const [rows, fields] = await promisePool.query("SELECT * FROM ?? WHERE RestaurantName=?", [table, restaurant_name]);
+        body = rows;
+        statusCode = 200;
+    } catch(err) {
+        console.log(err);
+        statusCode = 500;
+        body = err;
+    }
+
+    var response = {
+      "statusCode": statusCode,
+      "headers": {
+          "Access-Control-Allow-Origin": "*"
+      },
+      "body": JSON.stringify(body),
+      "isBase64Encoded": false
+    };
     
-    console.log(rows);
-    return {
-      statusCode: '200',
-      body: rows
-    };
-  } catch (error) {
-    console.log(error);
-    return {
-      statusCode: '500',
-      body: error
-    };
-  }
+    return response;
 };

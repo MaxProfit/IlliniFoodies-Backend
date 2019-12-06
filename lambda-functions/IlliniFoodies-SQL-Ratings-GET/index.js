@@ -6,27 +6,35 @@ const mysql = require('mysql2');
 const pool = mysql.createPool(require( "./config.json" ));
 
 exports.handler = async function(event, context) {
- 
 
-  try {
-    // now get a Promise wrapped instance of that pool
-    const promisePool = pool.promise();
-    // query database using promises
-    let columns = ['Commentid', 'CommentBody', 'RestaurantName', 'Rating', 'DayPosted'];
-    let table = 'Ratings';
-    const [rows, fields] = await promisePool.query("SELECT ?? FROM ?? WHERE Commentid=?", [columns, table, event.ratingid]);
+  
+    let body;
+    let statusCode;
+    try {
+        // now get a Promise wrapped instance of that pool
+        const promisePool = pool.promise();
+        // query database using promises
+        // let columns = ['Commentid', 'CommentBody', 'RestaurantName', 'Rating', 'DayPosted'];
+        let table = 'Ratings';
+        let ratingid = event["pathParameters"]["ratingid"];
+        const [rows, fields] = await promisePool.query("SELECT * FROM ?? WHERE Commentid=?", [table, ratingid]);
+        body = rows;
+        statusCode = 200;
+    } catch(err) {
+        console.log(err);
+        statusCode = 500;
+        body = err;
+    }
+
+    var response = {
+        "statusCode": statusCode,
+        "headers": {
+            "Access-Control-Allow-Origin": "*"
+        },
+        "body": JSON.stringify(body),
+        "isBase64Encoded": false
+    };
     
-    console.log(rows);
-    return {
-      statusCode: '200',
-      body: rows
-    };
-  } catch (error) {
-    console.log(error);
-    return {
-      statusCode: '500',
-      body: error
-    };
-  }
+    return response;
 
 };

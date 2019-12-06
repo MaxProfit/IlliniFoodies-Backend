@@ -13,10 +13,10 @@ exports.handler = async function(event, context) {
         // now get a Promise wrapped instance of that pool
         const promisePool = pool.promise();
         // query database using promises
-        let table = 'Ratings';
-        let ratingid = event["pathParameters"]["ratingid"];
+        let table = 'Restaurants';
+        let restaurant_name = event["pathParameters"]["restaurant-name"];
         // Use this to do things like inserting n stuff
-        const [rows, fields] = await promisePool.execute('DELETE FROM Ratings WHERE Commentid = ?', [ratingid]);
+        const [rows, fields] = await promisePool.execute('DELETE FROM Restaurants WHERE RestaurantName = ?', [restaurant_name]);
         body = rows;
         statusCode = 200;
     } catch(err) {

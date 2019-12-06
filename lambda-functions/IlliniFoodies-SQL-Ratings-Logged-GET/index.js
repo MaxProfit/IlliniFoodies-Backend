@@ -20,14 +20,43 @@ const return_response = async (body, statusCode) => {
 
 exports.handler = async function(event, context) {
     
-  
+    let params = {
+        TableName : 'IlliniFoodiesUserTable',
+        Key: {
+            Type: "User",
+            Id: event["pathParameters"]["userid"]
+        }
+    };
+    
     let body;
     let statusCode;
+    try {
+        body = await documentClient.get(params).promise();
+        statusCode = 200;
+    } catch(err) {
+        console.log(err);
+        statusCode = 500;
+        body = err;
+    }
+    body = body["Item"]["Following"]
+    body.push(event["pathParameters"]["userid"]);
+    let id_str = "("
+    body.forEach(element => id_str = id_str.concat("'", element, "',"));
+    if(id_str != ""){
+        id_str = id_str.substring(0, id_str.length - 1);   
+    }
+    id_str = id_str.concat(")");
+    console.log(id_str);
+    console.log(body);
+    
+    
     try {
       // now get a Promise wrapped instance of that pool
       const promisePool = pool.promise();
       // query database using promises
-      const [rows, fields] = await promisePool.query("SELECT * FROM Ratings NATURAL JOIN Restaurants ORDER BY DatePosted DESC");
+      let ratings_query = "SELECT * FROM Ratings NATURAL JOIN Restaurants WHERE UserId IN ".concat(id_str, " ORDER BY DatePosted DESC");
+      console.log(ratings_query);
+      const [rows, fields] = await promisePool.query(ratings_query);
       console.log(rows);
       body = rows
       statusCode = 200;
@@ -37,8 +66,10 @@ exports.handler = async function(event, context) {
       body = err;
     }
     
+    //return return_response(body, 200)
+    
     const promisePool2 = pool.promise();
-    const [rows2, fields2] = await promisePool2.query("SELECT UserId FROM Ratings NATURAL JOIN Restaurants");
+    const [rows2, fields2] = await promisePool2.query("SELECT UserId FROM Ratings NATURAL JOIN Restaurants WHERE UserId IN ".concat(id_str));
     let arr = [];
     console.log(rows2)
     for(var i = 0; i < rows2.length; i++){
@@ -46,7 +77,7 @@ exports.handler = async function(event, context) {
     }
     console.log(arr)
     arr = [...new Set(arr)];
-    let id_str = ""
+    id_str = ""
     arr.forEach(element => id_str = id_str.concat(element.toString(), ","));
     if(id_str != ""){
         id_str = id_str.substring(0, id_str.length - 1);   
